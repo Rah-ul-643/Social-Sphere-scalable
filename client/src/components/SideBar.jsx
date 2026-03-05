@@ -2,9 +2,16 @@ import React, { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import './css/SideBar.css';
 
-const SideBar = ({ setIsLoggedIn, setChatSectionOpen, setConversationSectionOpen, setJoinGroupModalOpen, setCreateGroupModalOpen, isDarkMode, setIsDarkMode }) => {
+const SideBar = ({
+  setIsLoggedIn,
+  setChatSectionOpen,
+  setConversationSectionOpen,
+  setJoinGroupModalOpen,
+  setCreateGroupModalOpen,
+  isDarkMode,
+  setIsDarkMode,
+}) => {
 
-  
   useEffect(() => {
     document.body.className = isDarkMode ? 'dark' : 'light';
   }, [isDarkMode]);
@@ -12,41 +19,58 @@ const SideBar = ({ setIsLoggedIn, setChatSectionOpen, setConversationSectionOpen
   const handleLogOut = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('token');
-    toast.success("Logged out successfully!");
-  }
+    toast.success('Logged out');
+  };
 
-  const handleModalButtonClick = () => {
-    setChatSectionOpen(prev => {
-      setConversationSectionOpen(prev);
-      return !prev;
-    });
-  }
+  const handleTogglePanel = () => {
+    setConversationSectionOpen(prev => !prev);
+  };
 
-  const handleJoinGroupModalClick = () => {
+  const handleJoinGroup = () => {
     setCreateGroupModalOpen(prev => prev ? !prev : prev);
     setJoinGroupModalOpen(prev => !prev);
-  }
+  };
 
-  const handleCreateGroupModalClick = () => {
+  const handleCreateGroup = () => {
     setJoinGroupModalOpen(prev => prev ? !prev : prev);
     setCreateGroupModalOpen(prev => !prev);
-  }
-
-  const handleAppearenceChange = () => {    
-    setIsDarkMode((prev) => !prev);
-  }
+  };
 
   return (
-
     <div className='Side-bar'>
-      <button title='change mode' onClick={handleAppearenceChange}><i class="fa-solid fa-sun"></i></button>
-      <button className='modal-btn' title='view chats' onClick={handleModalButtonClick} ><i className="fa-solid fa-list"></i></button>
-      <button title='join group' onClick={handleJoinGroupModalClick}><i className="fa-solid fa-users-gear"></i></button>
-      <button title='create new group' onClick={handleCreateGroupModalClick}><i className="fa-solid fa-plus"></i></button>
-      <button title='view profile' ><i className="fa-solid fa-user"></i></button>
-      <button title='logout' onClick={handleLogOut}><i className="fa-solid fa-right-from-bracket"></i></button>
+      <div className='sidebar-top'>
+        {/* Logo mark */}
+        <div className='sidebar-logo'>
+          <div className='sidebar-logo-inner' />
+        </div>
+
+        <button className='sidebar-btn' title='Toggle chat list' onClick={handleTogglePanel}>
+          <i className='fa-solid fa-list' />
+        </button>
+        <button className='sidebar-btn' title='Join a group' onClick={handleJoinGroup}>
+          <i className='fa-solid fa-users-gear' />
+        </button>
+        <button className='sidebar-btn' title='Create new group' onClick={handleCreateGroup}>
+          <i className='fa-solid fa-plus' />
+        </button>
+
+        <div className='sidebar-divider' />
+
+        <button className='sidebar-btn' title='View profile'>
+          <i className='fa-solid fa-user' />
+        </button>
+      </div>
+
+      <div className='sidebar-bottom'>
+        <button className='sidebar-btn' title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'} onClick={() => setIsDarkMode(p => !p)}>
+          <i className={isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} />
+        </button>
+        <button className='sidebar-btn logout' title='Log out' onClick={handleLogOut}>
+          <i className='fa-solid fa-right-from-bracket' />
+        </button>
+      </div>
     </div>
-  )
-}
+  );
+};
 
 export default SideBar;

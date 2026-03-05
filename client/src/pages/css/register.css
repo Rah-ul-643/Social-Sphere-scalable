@@ -1,85 +1,64 @@
+/* Register Page — shares auth card styles with login */
 
-body {
-    font-family: 'Arial', sans-serif;
-  }
-  
-  .register-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(135deg, #000000, #2559c2);
-  }
-  
-  .register-form {
-    background: #000000;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-  }
-  
-  .register-form h2 {
-    margin-bottom: 1.5rem;
-    color: #ffffff;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-    text-align: left;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #ffffff;
-  }
-  
-  .form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-  }
-  
-  .form-group input:focus {
-    border-color: #6b6bff;
-    box-shadow: 0 0 8px rgba(107, 107, 255, 0.6);
-    transform: scale(1.02);
-  }
-  
-  .btn {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #6b6bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
-  }
-  
-  .btn:hover {
-    background-color: #5757d1;
-    transform: scale(1.05);
-    color: #e0e0ff;
-  }
-  
-  .login {
-    margin-top: 1rem;
-    color: #ffffff;
-  }
-  
-  .login a {
-    color: #6b6bff;
-    text-decoration: none;
-  }
+.Register {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-base);
+  position: relative;
+  overflow: hidden;
+}
 
-  .login a:hover{
-    text-decoration: underline;
-  }
+.Register::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+  bottom: -10%;
+  right: -10%;
+  pointer-events: none;
+}
+
+.register-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem 2.5rem 2rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  animation: fadeUp 0.5s var(--ease) both;
+}
+
+/* Reuse same form styles — defined in login.css via globals,
+   but redeclare here to be self-contained */
+.register-card .auth-brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; }
+.register-card .auth-brand-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+.register-card .auth-brand-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 500; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
+.register-card .auth-heading { font-family: var(--font-display); font-size: 2rem; font-weight: 400; color: var(--text-primary); margin-bottom: 0.3rem; }
+.register-card .auth-subheading { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.8rem; }
+.register-card .form-group { margin-bottom: 0.85rem; }
+.register-card .form-group label { display: block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.4rem; }
+.register-card .form-group input { width: 100%; padding: 0.7rem 0.9rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: var(--font-body); font-size: 0.9rem; outline: none; transition: border-color var(--transition), box-shadow var(--transition); }
+.register-card .form-group input::placeholder { color: var(--text-muted); }
+.register-card .form-group input:focus { border-color: var(--border-accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.register-card .btn-auth { width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: var(--accent); color: var(--bg-base); border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.88rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: opacity var(--transition), transform var(--transition); }
+.register-card .btn-auth:hover { opacity: 0.88; transform: translateY(-1px); }
+.register-card .auth-footer { margin-top: 1.2rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+.register-card .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.register-card .auth-footer a:hover { opacity: 0.75; }
+
+/* Two-column password row on wider screens */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: 1fr; }
+}

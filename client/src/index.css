@@ -1,48 +1,95 @@
-* {
+/* ============================================================
+   SOCIAL SPHERE — Global Design Tokens
+   Aesthetic: Dark Luxury Minimal
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
+:root {
+  /* Surfaces */
+  --bg-base:       #0e0f11;
+  --bg-surface:    #141618;
+  --bg-elevated:   #1a1c1f;
+  --bg-overlay:    #1f2125;
+  --bg-hover:      #252830;
+
+  /* Accents */
+  --accent:        #c9a96e;
+  --accent-soft:   rgba(201, 169, 110, 0.12);
+  --accent-glow:   rgba(201, 169, 110, 0.25);
+
+  /* Text */
+  --text-primary:  #f0ece4;
+  --text-secondary:#9a9490;
+  --text-muted:    #5a5652;
+
+  /* Borders */
+  --border:        rgba(255,255,255,0.07);
+  --border-accent: rgba(201, 169, 110, 0.3);
+
+  /* Chat bubbles */
+  --bubble-sent:   #c9a96e;
+  --bubble-sent-text: #0e0f11;
+  --bubble-recv:   #1f2125;
+  --bubble-recv-text: #f0ece4;
+
+  /* Status */
+  --online:        #5fb878;
+  --offline:       #3a3d42;
+
+  /* Radii */
+  --radius-sm:     6px;
+  --radius-md:     12px;
+  --radius-lg:     18px;
+  --radius-xl:     24px;
+
+  /* Typography */
+  --font-body:     'DM Sans', sans-serif;
+  --font-display:  'Cormorant Garamond', serif;
+
+  /* Transitions */
+  --ease:          cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:    0.2s var(--ease);
 }
 
-body {
-  min-height: 100vh;
-  font-family: 'Open Sans', sans-serif;
+/* Light mode */
+body.light {
+  --bg-base:       #f5f2ed;
+  --bg-surface:    #ede9e2;
+  --bg-elevated:   #e5e0d8;
+  --bg-overlay:    #ddd8ce;
+  --bg-hover:      #d4cfc5;
+  --text-primary:  #1a1810;
+  --text-secondary:#6b6560;
+  --text-muted:    #9e9890;
+  --border:        rgba(0,0,0,0.09);
+  --border-accent: rgba(150, 110, 40, 0.35);
+  --bubble-recv:   #e0dcd4;
+  --bubble-recv-text: #1a1810;
+  --accent:        #9c6e2e;
+  --accent-soft:   rgba(156, 110, 46, 0.1);
+  --accent-glow:   rgba(156, 110, 46, 0.2);
+  --offline:       #c0bbb4;
+}
+
+html, body, #root, .App {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background: var(--bg-base);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  display: flex;
-  
 }
 
-body.light{
-  background-color: #ffffff;
-  color: #000000;
-}
-
-body.dark{
-  background-color: #000000;
-  color: #ffffff;
-}
-
-#root {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-} 
-
-.App {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-grow: 1;
-  
-}
-
-.Home, .Login, .Register{
-  width: 100%;
-
-}
+/* Shared scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

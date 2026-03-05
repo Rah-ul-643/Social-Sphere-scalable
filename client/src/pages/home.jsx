@@ -13,268 +13,216 @@ import CreateGroupModal from '../components/CreateGroupModal';
 import JoinGroupModal from '../components/JoinGroupModal';
 import AddParticipantModal from '../components/AddParticipantModal';
 import ViewGroupModal from '../components/ViewGroupModal';
-
-import globalLoaderImage from '../static/loader.gif';
-import componentLoaderImage from '../static/componentLoader.gif';
 import Loader from '../components/Loader';
 
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL
+import componentLoaderImage from '../static/componentLoader.gif';
+
+const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
 
 const Home = ({ setIsLoggedIn }) => {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [socket, setSocket] = useState(null);
+  const [userName, setUserName] = useState('');
+  const [activeGroup, setActiveGroup] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [onlineUsers, setOnlineUsers] = useState('');
 
-    const [isDarkMode, setIsDarkMode] = useState(true);
-    const [socket, setSocket] = useState(null);
-    const [userName, setUserName] = useState('');
-    const [activeGroup, setActiveGroup] = useState(null);
-    const [conversations, setConversations] = useState([]);
-    const [chats, setChats] = useState([]);
-    const [messageInput, setMessageInput] = useState('');
-    const [onlineUsers, setOnlineUsers] = useState('');
+  // Loader states
+  const [globalLoading, setGlobalLoading] = useState(true);
+  const [chatLoading, setChatLoading] = useState(false);
 
-    // loaders states
+  // Panel / modal states
+  const [isSmallScreen] = useState(window.innerWidth <= 768);
+  const [conversationSectionOpen, setConversationSectionOpen] = useState(true);
+  const [chatSectionOpen, setChatSectionOpen] = useState(!isSmallScreen);
+  const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+  const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
+  const [addParticipantModalOpen, setAddParticipantModalOpen] = useState(false);
+  const [viewGroupModalOpen, setViewGroupModalOpen] = useState(false);
 
-    const [globalLoading, setGlobalLoading] = useState(true);
-    const [chatLoading, setChatLoading] = useState(false);
+  // Socket setup
+  useEffect(() => {
+    const newSocket = io(SOCKET_SERVER_URL, {
+      query: { token: JSON.parse(localStorage.getItem('token')) }
+    });
+    setSocket(newSocket);
+    return () => newSocket.disconnect();
+  }, []);
 
-    //modal states
+  // Socket event listeners
+  useEffect(() => {
+    if (!socket) return;
 
-    const [isSmallScreen,] = useState(window.innerWidth <= 768);
-
-    const [conversationSectionOpen, setConversationSectionOpen] = useState(true);
-    const [chatSectionOpen, setChatSectionOpen] = useState(!isSmallScreen);
-    const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
-    const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
-    const [addParticipantModalOpen, setAddParticipantModalOpen] = useState(false);
-    const [viewGroupModalOpen, setViewGroupModalOpen] = useState(false);
-
-    // on-mount only useEffect -> sets up new socket connection
-
-    useEffect(() => {
-        const newSocket = io(SOCKET_SERVER_URL, {
-            query: {
-                token: JSON.parse(localStorage.getItem('token'))
-            }
-        });
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.disconnect();
-        };
-
-    }, []);
-
-    //  socket events
-
-    useEffect(() => {
-
-        if (!socket) return;
-
-        const handleConnect = () => {
-
-            socket.emit('retrieve-conversations', (groupList) => {
-                setConversations(groupList);
-                setGlobalLoading(false);
-            });
-        };
-
-        const handleOnlineUsers = (userList) => {
-            setOnlineUsers(userList);
-        }
-
-        const handleReceiveMsg = (msg, sender, groupId) => {
-
-            if (groupId === activeGroup.group_id) {
-                setChats(prevChats => [...prevChats, { sender, message: msg }]);
-            }
-
-        };
-
-        const handleDisconnect = () => {
-            if (socket) {
-                setActiveGroup('');
-                setChats([]);
-            }
-
-        };
-
-        socket.on('connect', handleConnect);
-        socket.on('disconnect', handleDisconnect);
-        socket.on('receive-msg', handleReceiveMsg);
-        socket.on('online-users', handleOnlineUsers);
-
-        socket.on('connect_error', () => {
-            localStorage.removeItem('token');
-            setIsLoggedIn(false);
-        });
-
-        socket.on('set-username', (username) => {
-            setUserName(username);
-        })
-
-        //cleanup function
-
-        return () => {
-            socket.off('connect', handleConnect);
-            socket.off('receive-msg', handleReceiveMsg);
-            socket.off('online-users', handleOnlineUsers);
-            socket.off('disconnect', handleDisconnect);
-        };
-
-    }, [activeGroup, setIsLoggedIn, socket, userName]);
-
-
-
-    const fetchChatHistory = (group) => {
-        if (socket) {
-            setChatLoading(true);
-            const group_id = group.group_id;
-            const group_name = group.group_name;
-
-            socket.emit('chat-history', group_id, (chats) => {
-
-                setChats(chats);
-                setChatLoading(false);
-
-                if (!conversations.find(group => group.group_id === group_id)) {                 // add the group to the list of conversations.                    
-                    setConversations(prev => [...prev, { group_name, group_id }]);
-                }
-
-            });
-
-        }
+    const handleConnect = () => {
+      socket.emit('retrieve-conversations', (groupList) => {
+        setConversations(groupList);
+        setGlobalLoading(false);
+      });
     };
 
+    const handleOnlineUsers = (userList) => setOnlineUsers(userList);
 
-    const handleSendMsg = (e) => {
-        e.preventDefault();
-
-        if (socket && messageInput && activeGroup) {
-            socket.emit('send-msg', messageInput, activeGroup.group_id);
-            setMessageInput('');
-        }
+    const bumpToTop = (groupId) => {
+      setConversations(prev => {
+        const idx = prev.findIndex(g => g.group_id === groupId);
+        if (idx <= 0) return prev;
+        const updated = [...prev];
+        const [group] = updated.splice(idx, 1);
+        return [group, ...updated];
+      });
     };
 
+    const handleReceiveMsg = (msg, sender, groupId) => {
+      if (groupId === activeGroup?.group_id) {
+        setChats(prev => [...prev, { sender, message: msg }]);
+      }
+      bumpToTop(groupId);
+    };
 
+    const handleDisconnect = () => {
+      setActiveGroup('');
+      setChats([]);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('receive-msg', handleReceiveMsg);
+    socket.on('online-users', handleOnlineUsers);
+    socket.on('connect_error', () => { localStorage.removeItem('token'); setIsLoggedIn(false); });
+    socket.on('set-username', (username) => setUserName(username));
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('receive-msg', handleReceiveMsg);
+      socket.off('online-users', handleOnlineUsers);
+      socket.off('disconnect', handleDisconnect);
+    };
+  }, [activeGroup, setIsLoggedIn, socket]);
+
+  const fetchChatHistory = (group) => {
+    if (!socket) return;
+    setChatLoading(true);
+    socket.emit('chat-history', group.group_id, (history) => {
+      setChats(history);
+      setChatLoading(false);
+      if (!conversations.find(g => g.group_id === group.group_id)) {
+        setConversations(prev => [...prev, { group_name: group.group_name, group_id: group.group_id }]);
+      }
+    });
+  };
+
+  const bumpGroupToTop = (groupId) => {
+    setConversations(prev => {
+      const idx = prev.findIndex(g => g.group_id === groupId);
+      if (idx <= 0) return prev;
+      const updated = [...prev];
+      const [group] = updated.splice(idx, 1);
+      return [group, ...updated];
+    });
+  };
+
+  const handleSendMsg = (e) => {
+    e.preventDefault();
+    if (socket && messageInput && activeGroup) {
+      socket.emit('send-msg', messageInput, activeGroup.group_id);
+      setMessageInput('');
+      bumpGroupToTop(activeGroup.group_id);
+    }
+  };
+
+  if (globalLoading) {
     return (
-        <>
-            {globalLoading ?
+      <Loader
+        divClasses="Loader Home GlobalLoader"
+        content="Connecting..."
+      />
+    );
+  }
 
-                <Loader
-                    divClasses={'Loader Home'}
-                    loaderImage={globalLoaderImage}
-                />
+  return (
+    <div className='Home'>
 
-                :
+      {/* Modals */}
+      {joinGroupModalOpen && (
+        <JoinGroupModal setJoinGroupModalOpen={setJoinGroupModalOpen} conversations={conversations} />
+      )}
+      {createGroupModalOpen && (
+        <CreateGroupModal
+          setCreateGroupModalOpen={setCreateGroupModalOpen}
+          setActiveGroup={setActiveGroup}
+          setConversations={setConversations}
+        />
+      )}
+      {addParticipantModalOpen && (
+        <AddParticipantModal setAddParticipantModalOpen={setAddParticipantModalOpen} activeGroup={activeGroup} />
+      )}
+      {viewGroupModalOpen && (
+        <ViewGroupModal
+          setViewGroupModalOpen={setViewGroupModalOpen}
+          activeGroup={activeGroup}
+          userName={userName}
+          onlineUsers={onlineUsers}
+        />
+      )}
 
-                <div className='Home'>
+      {/* Sidebar */}
+      <SideBar
+        setIsLoggedIn={setIsLoggedIn}
+        setConversationSectionOpen={setConversationSectionOpen}
+        setChatSectionOpen={setChatSectionOpen}
+        setJoinGroupModalOpen={setJoinGroupModalOpen}
+        setCreateGroupModalOpen={setCreateGroupModalOpen}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      />
 
-                    {joinGroupModalOpen &&
-                        <JoinGroupModal
-                            setJoinGroupModalOpen={setJoinGroupModalOpen}
-                            conversations={conversations}
-                        />
-                    }
+      {/* Conversation List Panel */}
+      <section className={`Conversation-Section ${conversationSectionOpen ? 'slide-in' : 'slide-out'}`}>
+        <SearchBar />
+        <ChatList
+          conversations={conversations}
+          activeGroup={activeGroup}
+          setActiveGroup={setActiveGroup}
+          fetchChatHistory={fetchChatHistory}
+          setChatSectionOpen={setChatSectionOpen}
+          setConversationSectionOpen={setConversationSectionOpen}
+          isSmallScreen={isSmallScreen}
+        />
+      </section>
 
-                    {createGroupModalOpen &&
-                        <CreateGroupModal
-                            setCreateGroupModalOpen={setCreateGroupModalOpen}
-                            setActiveGroup={setActiveGroup}
-                            setConversations={setConversations}
-                        />
-                    }
-
-                    {addParticipantModalOpen &&
-                        <AddParticipantModal
-                            setAddParticipantModalOpen={setAddParticipantModalOpen}
-                            activeGroup={activeGroup}
-                        />
-                    }
-
-                    {viewGroupModalOpen &&
-                        <ViewGroupModal
-                            setViewGroupModalOpen={setViewGroupModalOpen}
-                            activeGroup={activeGroup}
-                            userName={userName}
-                            onlineUsers={onlineUsers}
-                        />
-                    }
-
-                    <SideBar
-                        setIsLoggedIn={setIsLoggedIn}
-                        setConversationSectionOpen={setConversationSectionOpen}
-                        setChatSectionOpen={setChatSectionOpen}
-                        setJoinGroupModalOpen={setJoinGroupModalOpen}
-                        setCreateGroupModalOpen={setCreateGroupModalOpen}
-                        isDarkMode={isDarkMode}
-                        setIsDarkMode={setIsDarkMode}
-                    />
-
-                    {conversationSectionOpen && <section className=
-                        {`Conversation-Section ${conversationSectionOpen ? 'slide-in' : 'slide-out'}`}
-                        style={{ borderRight: isDarkMode ? 'solid white 2px' : 'solid black 2px' }}
-                    >
-
-                        <SearchBar />
-                        <h1 className='chats-header'>Chats</h1>
-                        <ChatList
-                            conversations={conversations}
-                            activeGroup={activeGroup}
-                            setActiveGroup={setActiveGroup}
-                            fetchChatHistory={fetchChatHistory}
-                            setChatSectionOpen={setChatSectionOpen}
-                            setConversationSectionOpen={setConversationSectionOpen}
-                            isSmallScreen={isSmallScreen}
-                        />
-
-                    </section>
-                    }
-
-                    {chatSectionOpen && <section className='Chat-Section'>
-
-                        <ChatHeader
-                            activeGroup={activeGroup}
-                            setAddParticipantModalOpen={setAddParticipantModalOpen}
-                            setViewGroupModalOpen={setViewGroupModalOpen}
-                        />
-                        <hr style={{
-                            backgroundColor: isDarkMode ? 'white' : 'black',
-                            width: '75%',
-                            margin: 'auto',
-                            height: '1.5px'
-                        }} />
-                        {chatLoading ?
-
-                            <Loader
-                                divClasses={'Chat-Content Loader'}
-                                loaderImage={componentLoaderImage}
-                                imageClasses={'ChatLoaderImg'}
-                                content={'loading chats...'}
-                            />
-
-                            :
-                            <ChatContent
-                                userName={userName}
-                                activeGroup={activeGroup}
-                                chats={chats}
-                            />
-
-                        }
-
-                        <MessageInputBar
-                            messageInput={messageInput}
-                            setMessageInput={setMessageInput}
-                            activeGroup={activeGroup}
-                            handleSendMsg={handleSendMsg}
-                        />
-
-                    </section>
-                    }
-
-                </div>
-            }
-        </>
-    )
-
-}
+      {/* Chat Panel — always visible on desktop, conditional on mobile */}
+      {(!isSmallScreen || chatSectionOpen) && (
+        <section className='Chat-Section'>
+          <ChatHeader
+            activeGroup={activeGroup}
+            setAddParticipantModalOpen={setAddParticipantModalOpen}
+            setViewGroupModalOpen={setViewGroupModalOpen}
+            setConversationSectionOpen={setConversationSectionOpen}
+            setChatSectionOpen={setChatSectionOpen}
+            isSmallScreen={isSmallScreen}
+          />
+          {chatLoading ? (
+            <Loader
+              divClasses="Chat-Content Loader"
+              loaderImage={componentLoaderImage}
+              imageClasses="ChatLoaderImg"
+              content="Loading messages..."
+            />
+          ) : (
+            <ChatContent userName={userName} activeGroup={activeGroup} chats={chats} />
+          )}
+          <MessageInputBar
+            messageInput={messageInput}
+            setMessageInput={setMessageInput}
+            activeGroup={activeGroup}
+            handleSendMsg={handleSendMsg}
+          />
+        </section>
+      )}
+    </div>
+  );
+};
 
 export default Home;

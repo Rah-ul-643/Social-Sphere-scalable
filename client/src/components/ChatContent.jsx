@@ -1,40 +1,48 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react';
 import './css/ChatContent.css';
 
-
 const ChatContent = ({ userName, activeGroup, chats }) => {
-    const chatContainerRef = useRef(null);
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-    }, [chats]);
+  const containerRef = useRef(null);
 
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [chats]);
+
+  if (!activeGroup) {
     return (
-        <ul className='Chat-Content' ref={chatContainerRef}>
-            {activeGroup ?
-                !chats.length ?
-                    <div className='Empty-Chats'>
-                        <p>Be the first to start the conversation </p>
-                        <p>Greet everyone by saying hello...</p>
-                    </div>
-                    :
-                    chats.map((item, index) => (
-                        <li key={index} className={item.sender === userName ? 'sender-message' : 'receiver-message'}>
-                            <h3>{item.sender!==userName && item.sender.toUpperCase()}</h3>
-                            <p>{item.message}</p>
-                        </li>
-                    ))
-                :
-                <div className='Empty-Chats'>
-                    <h1>Welcome !</h1>
-                    <p>Start a conversation by clicking on a group name</p>
-                    <h2>or</h2>
-                    <p>Explore the sidebar to create a new group or join a group...</p>
-                </div>
-            }
-        </ul>
-    )
-}
+      <ul className='Chat-Content'>
+        <div className='Empty-Chats'>
+          <div className='empty-chats-icon'><i className='fa-regular fa-comments' /></div>
+          <h1>Welcome.</h1>
+          <p>Select a conversation from the left, or create a new group to get started.</p>
+        </div>
+      </ul>
+    );
+  }
+
+  if (!chats.length) {
+    return (
+      <ul className='Chat-Content'>
+        <div className='Empty-Chats'>
+          <div className='empty-chats-icon'><i className='fa-solid fa-feather' /></div>
+          <p>No messages yet. Be the first to say something.</p>
+        </div>
+      </ul>
+    );
+  }
+
+  return (
+    <ul className='Chat-Content' ref={containerRef}>
+      {chats.map((item, index) => (
+        <li key={index} className={item.sender === userName ? 'sender-message' : 'receiver-message'}>
+          {item.sender !== userName && <h3>{item.sender}</h3>}
+          <p>{item.message}</p>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 export default ChatContent;

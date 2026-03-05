@@ -35,7 +35,6 @@ app.use(cors({              // cors middleware
 app.use('/api/user/', userRoutes);
 app.use('/api/chat/', auth, chatRoutes);
 
-
 // server event listener setup
 
 server.listen(4000, () => {

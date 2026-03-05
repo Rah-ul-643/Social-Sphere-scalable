@@ -1,35 +1,136 @@
+/* MessageInputBar */
+
+.Message-Input-Wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Emoji Picker — floats above the input bar */
+.emoji-picker-container {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 1.25rem;
+  z-index: 80;
+  width: 320px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border);
+  animation: fadeUp 0.15s var(--ease) both;
+}
+
+/* Override emoji-picker-react theme vars to match our palette */
+.emoji-picker-container .EmojiPickerReact {
+  --epr-bg-color:              var(--bg-elevated);
+  --epr-category-label-bg-color: var(--bg-elevated);
+  --epr-hover-bg-color:        var(--bg-hover);
+  --epr-focus-bg-color:        var(--bg-hover);
+  --epr-text-color:            var(--text-primary);
+  --epr-search-input-bg-color: var(--bg-surface);
+  --epr-search-input-placeholder-color: var(--text-muted);
+  --epr-search-border-color:   var(--border);
+  --epr-border-color:          var(--border);
+  --epr-category-icon-active-color: var(--accent);
+  --epr-skin-tone-picker-menu-color: var(--bg-overlay);
+  font-family: var(--font-body);
+  border: none !important;
+}
 
 .Message-Input-Bar {
-    display: flex;
-    justify-content: center;
-    width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
 }
 
-.Message-Input-Bar input[type="text"] {
-    color: black;   
-    flex-grow: 1;
-    max-width: 80%;
-    padding: 8px 20px;
-    font-size: 16px;
-    border: #5b5b5b 2px solid;
-    border-top-left-radius: 1rem;
-    border-bottom-left-radius: 1rem;
-    outline: none;
+/* Emoji toggle button */
+.emoji-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition), background var(--transition), transform var(--transition);
 }
 
-
-.no-cursor{
-    pointer-events: none;
+.emoji-toggle-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
-.Message-Input-Bar button {
-    padding: 5px 20px;
-    font-size: 20px;
-    cursor: pointer;
-    background-color: rgb(225, 0, 255);
-    color: rgb(0, 0, 0);
-    border: none;
-    border-bottom-right-radius: 1rem;
-    border-top-right-radius: 1rem;
+.emoji-toggle-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  transform: rotate(10deg) scale(1.1);
 }
 
+.emoji-toggle-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.Message-Input-Bar input {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.Message-Input-Bar input::placeholder { color: var(--text-muted); }
+
+.Message-Input-Bar input:focus {
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.Message-Input-Bar input.no-cursor {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  color: var(--bg-base);
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.send-btn:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}

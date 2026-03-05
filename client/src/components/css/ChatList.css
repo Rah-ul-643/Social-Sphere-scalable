@@ -1,36 +1,87 @@
-.Chat-List{
-    height: 85%;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;  
-    border-radius: 1rem;
-    overflow-y: scroll;
+/* ChatList */
+
+.chat-list-header {
+  padding: 0 1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.Chat-List::-webkit-scrollbar {
-    display: none;
+.Chat-List {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0 0.5rem 1rem;
 }
 
-.Chat-List li{
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 48px;
-    margin: 0.8rem 0;
-    cursor: pointer;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    opacity: 0.75;
+.Chat-List li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition);
+  position: relative;
 }
 
-.Chat-List li:hover, .active {
-    background-color: rgb(54, 54, 54);
-    opacity: 1 !important;
-    color: white;
+.Chat-List li:hover { background: var(--bg-hover); }
+
+.Chat-List li.active {
+  background: var(--accent-soft);
 }
 
-.Chat-List li h2{
-    /* color: white; */
-    font-size: 1rem;
-    font-weight: bolder;
+.Chat-List li.active .chat-list-name {
+  color: var(--accent);
+}
+
+.group-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: border-color var(--transition);
+}
+
+.Chat-List li.active .group-avatar {
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+.chat-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-list-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.chat-list-empty i {
+  display: block;
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.4;
 }
