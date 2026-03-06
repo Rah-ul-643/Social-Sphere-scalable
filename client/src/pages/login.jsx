@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/login.css';
-import { userApi } from '../apis';
+import { authApi } from '../apis';
 import toast from 'react-hot-toast';
 
 const Login = ({ setIsLoggedIn }) => {
@@ -13,7 +13,7 @@ const Login = ({ setIsLoggedIn }) => {
     e.preventDefault();
     const toastId = toast.loading('Signing in...');
     try {
-      const response = await userApi.post('/login', { username, password });
+      const response = await authApi.post('/login', { username, password });
       if (response.data.success) {
         localStorage.setItem('token', JSON.stringify(response.data.token));
         setIsLoggedIn(true);

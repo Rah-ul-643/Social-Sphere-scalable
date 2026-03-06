@@ -9,6 +9,13 @@ const userApi = axios.create(
     }
 )
 
+const authApi = axios.create(
+    {
+        baseURL: `${BASE_URL}/auth`,
+        withCredentials: true
+    }
+)
+
 const chatApi = axios.create(
     {
         baseURL: `${BASE_URL}/chat`,
@@ -16,4 +23,4 @@ const chatApi = axios.create(
     }
 )
 
-export {userApi, chatApi};
+export {userApi, chatApi, authApi};

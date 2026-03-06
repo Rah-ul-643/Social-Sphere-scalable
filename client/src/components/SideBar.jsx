@@ -4,10 +4,10 @@ import './css/SideBar.css';
 
 const SideBar = ({
   setIsLoggedIn,
-  setChatSectionOpen,
   setConversationSectionOpen,
   setJoinGroupModalOpen,
   setCreateGroupModalOpen,
+  setProfileModalOpen,
   isDarkMode,
   setIsDarkMode,
 }) => {
@@ -56,7 +56,7 @@ const SideBar = ({
 
         <div className='sidebar-divider' />
 
-        <button className='sidebar-btn' title='View profile'>
+        <button className='sidebar-btn' title='View profile' onClick={() => setProfileModalOpen(p => !p)}>
           <i className='fa-solid fa-user' />
         </button>
       </div>

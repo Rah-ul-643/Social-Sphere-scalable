@@ -65,4 +65,41 @@ const registerController = async (req, res) => {
 
 }
 
-module.exports = {loginController, registerController};
+const fetchProfileController = async (req, res) => {
+    const username = req.username;
+    try {
+        const user = await users.findOne({ username: username }).exec();
+        if (user) {
+            const { name, username } = user;
+            res.status(200).json({ success: true, user: { name, username } });
+        }
+        else {
+            res.status(404).json({ success: false, message: "User not found" });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ message: error.message });
+    }
+}
+
+const updateProfileController = async (req, res) => {
+    const username = req.username;
+    const {name} = req.body;
+    try {
+        const user = await users.findOne({ username: username }).exec();
+        if (user) {
+            user.name = name || user.name;
+            await user.save();
+            res.status(200).json({ success: true, message: "Profile updated successfully" });
+        }
+        else {
+            res.status(404).json({ success: false, message: "User not found" });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.status(400).json({ message: error.message });
+    }
+}
+
+module.exports = {loginController, registerController, fetchProfileController, updateProfileController};

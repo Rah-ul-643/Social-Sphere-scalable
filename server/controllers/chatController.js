@@ -4,6 +4,7 @@ const groups = require('../models/groups');
 const messages = require('../models/messages');
 const users = require('../models/users');
 
+
 const getMessages = async (groupId) => {
 
     const doc = await groups.findOne({ group_id: groupId })
@@ -199,4 +200,36 @@ const leaveGroupHandler = async (req, res) => {
     }
 }
 
-module.exports = { getMessages, createNewMessage, searchQueryHandler, joinGroupHandler, createGroupHandler, addParticipant, groupDataHandler, joinRequestResponseHandler, leaveGroupHandler };
+const removeParticipant = async (req, res) => {
+    try {
+        const executor = req.username;
+        const { groupId, username } = req.query;
+        const user = await users.findOne({ username: username }).exec();
+
+        if (user) {
+            const group = await groups.findOne({ group_id: groupId });
+
+            if (executor !== group.admin) {
+                res.status(401).json({ success: false, message: "Unauthorized action!" });
+            }
+
+            if (group.participants.includes(username)) {   
+                group.participants = group.participants.filter(user => user !== username);
+                await group.save();
+                res.status(200).json({ success: true });
+            }
+            else {
+                res.status(200).json({ success: false, message: "User not in group!" });
+            }
+        }
+        else {
+            res.status(201).json({ success: false, message: "Invalid username!" });
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ message: error.message });
+    }
+}
+
+module.exports = { getMessages, createNewMessage, searchQueryHandler, joinGroupHandler, createGroupHandler, addParticipant, removeParticipant, groupDataHandler, joinRequestResponseHandler, leaveGroupHandler };

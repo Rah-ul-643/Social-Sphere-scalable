@@ -260,3 +260,32 @@
 }
 
 .leave-group-btn:hover { background: rgba(220, 80, 80, 0.08); }
+
+/* Participant actions (online dot + remove button) */
+.participant-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remove-participant-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: 1px solid rgba(220, 80, 80, 0.25);
+  border-radius: var(--radius-sm);
+  color: #c05050;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: opacity var(--transition), background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+
+.remove-participant-btn:hover {
+  background: rgba(220, 80, 80, 0.1);
+  border-color: rgba(220, 80, 80, 0.5);
+  color: #e06060;
+}

@@ -33,6 +33,26 @@ const ViewGroupModal = ({ setViewGroupModalOpen, userName, activeGroup, onlineUs
     }
   };
 
+  const handleRemoveParticipant = async (username) => {
+    try {
+      const response = await chatApi.delete('/remove-participant', {
+        params: { groupId: activeGroup.group_id, username }
+      });
+      if (response.data.success) {
+        toast.success(`${username} removed from group.`);
+        setGroupData(prev => ({
+          ...prev,
+          participants: prev.participants.filter(p => p !== username)
+        }));
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   const handleLeave = async () => {
     try {
       const response = await chatApi.delete('/leave-group', { params: { group_id: activeGroup.group_id } });
@@ -73,7 +93,18 @@ const ViewGroupModal = ({ setViewGroupModalOpen, userName, activeGroup, onlineUs
                       <span className='participant-name'>{username}</span>
                       {groupData.admin === username && <span className='admin-badge'>admin</span>}
                     </div>
-                    <div className={onlineUsers.includes(username) ? 'online-dot' : 'offline-dot'} />
+                    <div className='participant-actions'>
+                      <div className={onlineUsers.includes(username) ? 'online-dot' : 'offline-dot'} />
+                      {groupData.admin === userName && groupData.admin !== username && (
+                        <button
+                          className='remove-participant-btn'
+                          onClick={() => handleRemoveParticipant(username)}
+                          title={`Remove ${username}`}
+                        >
+                          <i className='fa-solid fa-user-minus' />
+                        </button>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

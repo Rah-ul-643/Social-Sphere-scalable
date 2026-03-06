@@ -1,0 +1,319 @@
+/* ProfileModal */
+
+.profile-modal {
+  max-width: 380px;
+  text-align: center;
+}
+
+/* ---- Avatar ---- */
+.profile-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem auto 1.25rem;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background: var(--accent-soft);
+  border: 2px solid var(--border-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.profile-avatar span {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.profile-status-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  border: 2px solid var(--bg-elevated);
+}
+
+.profile-status-badge.online  { color: var(--online); }
+.profile-status-badge.offline { color: var(--offline); }
+
+/* ---- Identity ---- */
+.profile-identity {
+  margin-bottom: 1.5rem;
+}
+
+.profile-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.profile-username {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-family: 'Courier New', monospace;
+}
+
+.profile-status-label {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.profile-status-label.online {
+  color: var(--online);
+  background: rgba(95, 184, 120, 0.12);
+  border: 1px solid rgba(95, 184, 120, 0.25);
+}
+
+.profile-status-label.offline {
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+}
+
+/* ---- Info Grid ---- */
+.profile-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+}
+
+.profile-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: border-color var(--transition);
+}
+
+.profile-info-row:hover {
+  border-color: var(--border-accent);
+}
+
+.profile-info-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.profile-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.profile-info-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-info-value {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Loading skeletons ---- */
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.profile-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-hover) 25%,
+    var(--bg-overlay) 50%,
+    var(--bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.avatar-skeleton {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+}
+
+.line-skeleton {
+  height: 14px;
+}
+
+.line-skeleton.wide   { width: 60%; }
+.line-skeleton.narrow { width: 40%; }
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ---- Error ---- */
+.profile-error {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1rem 0;
+}
+
+/* ---- Inline name editing ---- */
+
+.editable-row {
+  cursor: default;
+}
+
+/* Display mode: name + pen icon side by side */
+.name-display-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.name-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition), background var(--transition),
+              color var(--transition), border-color var(--transition);
+  flex-shrink: 0;
+}
+
+/* Show pen only on row hover */
+.editable-row:hover .name-edit-btn {
+  opacity: 1;
+}
+
+.name-edit-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+/* Edit mode: input + confirm/cancel buttons */
+.name-edit-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.name-edit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border-accent);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transition: border-color var(--transition);
+}
+
+.name-edit-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.name-edit-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.name-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition);
+}
+
+.name-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.name-action-btn.confirm {
+  background: var(--accent-soft);
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+.name-action-btn.confirm:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg-base);
+}
+
+.name-action-btn.cancel {
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.name-action-btn.cancel:hover:not(:disabled) {
+  background: rgba(220, 80, 80, 0.1);
+  border-color: rgba(220, 80, 80, 0.3);
+  color: #e06060;
+}

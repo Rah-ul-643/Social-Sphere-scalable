@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import React, { useState } from 'react';
-import { userApi } from '../apis';
+import { authApi } from '../apis';
 import './css/register.css';
 import toast from 'react-hot-toast';
 
@@ -17,7 +17,7 @@ const Register = () => {
 
     const toastId = toast.loading('Creating your account...');
     try {
-      const response = await userApi.post('/register', { name, username, password });
+      const response = await authApi.post('/register', { name, username, password });
       if (response.data.success) {
         toast.success(response.data.message);
         navigate('/login');

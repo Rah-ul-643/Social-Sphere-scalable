@@ -13,6 +13,7 @@ import CreateGroupModal from '../components/CreateGroupModal';
 import JoinGroupModal from '../components/JoinGroupModal';
 import AddParticipantModal from '../components/AddParticipantModal';
 import ViewGroupModal from '../components/ViewGroupModal';
+import ProfileModal from '../components/ProfileModal';
 import Loader from '../components/Loader';
 
 import componentLoaderImage from '../static/componentLoader.gif';
@@ -41,6 +42,7 @@ const Home = ({ setIsLoggedIn }) => {
   const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
   const [addParticipantModalOpen, setAddParticipantModalOpen] = useState(false);
   const [viewGroupModalOpen, setViewGroupModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // Socket setup
   useEffect(() => {
@@ -166,14 +168,21 @@ const Home = ({ setIsLoggedIn }) => {
           onlineUsers={onlineUsers}
         />
       )}
+      {profileModalOpen &&
+        <ProfileModal
+            setProfileModalOpen={setProfileModalOpen}
+            userName={userName}
+            onlineUsers={onlineUsers}
+        />
+      }
 
       {/* Sidebar */}
       <SideBar
         setIsLoggedIn={setIsLoggedIn}
         setConversationSectionOpen={setConversationSectionOpen}
-        setChatSectionOpen={setChatSectionOpen}
         setJoinGroupModalOpen={setJoinGroupModalOpen}
         setCreateGroupModalOpen={setCreateGroupModalOpen}
+        setProfileModalOpen={setProfileModalOpen}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
       />
