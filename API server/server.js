@@ -1,43 +1,61 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
-const cookie_parser = require('cookie-parser');
+const cookieParser = require('cookie-parser');
 
-const CLIENT_URL = process.env.CLIENT_URL;
+const connectDB = require('./config/database');
+const auth = require('./middlewares/auth');
 
 const userRoutes = require('./api routes/userRoutes');
 const chatRoutes = require('./api routes/chatRoutes');
 
-const connectDB = require('./config/database');
-const {server,app} = require('./socket/socketServer');
+// -------------------- INIT --------------------
 
-const auth = require('./middlewares/auth');
+const app = express();
 
-// middlewares
+const CLIENT_URL = process.env.CLIENT_URL || '*';
+const PORT = process.env.PORT || 4000;
 
+// -------------------- MIDDLEWARES --------------------
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookie_parser());   
-app.use(express.json());    // json parser
+app.use(cookieParser());
 
+app.use(
+  cors({
+    origin: CLIENT_URL,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
 
-app.use(cors({              // cors middleware
-  
-  origin: CLIENT_URL, 
-  methods: 'GET,POST,PUT,DELETE', 
-  allowedHeaders: 'Content-Type,Authorization' ,
-  credentials: true
-}));
+// -------------------- ROUTES --------------------
 
+app.use('/api/auth', userRoutes);
+app.use('/api/user', auth, userRoutes);
+app.use('/api/chat', auth, chatRoutes);
 
-//Routes config
+// -------------------- HEALTH CHECK --------------------
 
-app.use('/api/auth/', userRoutes);
-app.use('/api/user/', auth, userRoutes);
-app.use('/api/chat/', auth, chatRoutes);
-
-// server event listener setup
-
-server.listen(4000, () => {
-  connectDB();
-  console.log('server listening on port 4000');
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
 });
+
+// -------------------- SERVER START --------------------
+
+async function startServer() {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`API server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
