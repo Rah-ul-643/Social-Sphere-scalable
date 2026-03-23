@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import io from 'socket.io-client';
 
 import './css/home.css';
@@ -16,6 +16,7 @@ import ViewGroupModal from '../components/ViewGroupModal';
 import ProfileModal from '../components/ProfileModal';
 import Loader from '../components/Loader';
 
+import { chatApi } from '../apis';
 import componentLoaderImage from '../static/componentLoader.gif';
 
 const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
@@ -28,13 +29,11 @@ const Home = ({ setIsLoggedIn }) => {
   const [conversations, setConversations] = useState([]);
   const [chats, setChats] = useState([]);
   const [messageInput, setMessageInput] = useState('');
-  const [onlineUsers, setOnlineUsers] = useState('');
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
-  // Loader states
   const [globalLoading, setGlobalLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
 
-  // Panel / modal states
   const [isSmallScreen] = useState(window.innerWidth <= 768);
   const [conversationSectionOpen, setConversationSectionOpen] = useState(true);
   const [chatSectionOpen, setChatSectionOpen] = useState(!isSmallScreen);
@@ -44,78 +43,9 @@ const Home = ({ setIsLoggedIn }) => {
   const [viewGroupModalOpen, setViewGroupModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  // Socket setup
-  useEffect(() => {
-    const newSocket = io(SOCKET_SERVER_URL, {
-      query: { token: JSON.parse(localStorage.getItem('token')) }
-    });
-    setSocket(newSocket);
-    return () => newSocket.disconnect();
-  }, []);
+  // ── helpers ──────────────────────────────────────────────
 
-  // Socket event listeners
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleConnect = () => {
-      socket.emit('retrieve-conversations', (groupList) => {
-        setConversations(groupList);
-        setGlobalLoading(false);
-      });
-    };
-
-    const handleOnlineUsers = (userList) => setOnlineUsers(userList);
-
-    const bumpToTop = (groupId) => {
-      setConversations(prev => {
-        const idx = prev.findIndex(g => g.group_id === groupId);
-        if (idx <= 0) return prev;
-        const updated = [...prev];
-        const [group] = updated.splice(idx, 1);
-        return [group, ...updated];
-      });
-    };
-
-    const handleReceiveMsg = (msg, sender, groupId) => {
-      if (groupId === activeGroup?.group_id) {
-        setChats(prev => [...prev, { sender, message: msg }]);
-      }
-      bumpToTop(groupId);
-    };
-
-    const handleDisconnect = () => {
-      setActiveGroup('');
-      setChats([]);
-    };
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('receive-msg', handleReceiveMsg);
-    socket.on('online-users', handleOnlineUsers);
-    socket.on('connect_error', () => { localStorage.removeItem('token'); setIsLoggedIn(false); });
-    socket.on('set-username', (username) => setUserName(username));
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('receive-msg', handleReceiveMsg);
-      socket.off('online-users', handleOnlineUsers);
-      socket.off('disconnect', handleDisconnect);
-    };
-  }, [activeGroup, setIsLoggedIn, socket]);
-
-  const fetchChatHistory = (group) => {
-    if (!socket) return;
-    setChatLoading(true);
-    socket.emit('chat-history', group.group_id, (history) => {
-      setChats(history);
-      setChatLoading(false);
-      if (!conversations.find(g => g.group_id === group.group_id)) {
-        setConversations(prev => [...prev, { group_name: group.group_name, group_id: group.group_id }]);
-      }
-    });
-  };
-
-  const bumpGroupToTop = (groupId) => {
+  const bumpToTop = useCallback((groupId) => {
     setConversations(prev => {
       const idx = prev.findIndex(g => g.group_id === groupId);
       if (idx <= 0) return prev;
@@ -123,32 +53,155 @@ const Home = ({ setIsLoggedIn }) => {
       const [group] = updated.splice(idx, 1);
       return [group, ...updated];
     });
-  };
+  }, []);
+
+  // ── socket setup ─────────────────────────────────────────
+
+  useEffect(() => {
+    const token = JSON.parse(localStorage.getItem('token'));
+
+    const newSocket = io(SOCKET_SERVER_URL, {
+      // Send token in auth (matches ws-server.js: socket.handshake.auth.token)
+      auth: { token },
+    });
+
+    setSocket(newSocket);
+    return () => newSocket.disconnect();
+  }, []);
+
+  // ── fetch conversations via REST API on mount ─────────────
+  // Replaces the old socket "retrieve-conversations" event that tried to
+  // query the DB directly from the WS server.
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const { data } = await chatApi.get('/conversations');
+        if (data.success) setConversations(data.conversations);
+      } catch (err) {
+        console.error('[API] Failed to load conversations:', err.message);
+      } finally {
+        setGlobalLoading(false);
+      }
+    };
+
+    fetchConversations();
+  }, []);
+
+  // ── socket event listeners ───────────────────────────────
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Presence snapshot sent immediately after connection
+    const handleOnlineUsers = (userList) => setOnlineUsers(userList);
+
+    // Incremental presence updates broadcast by the WS server
+    const handleUserOnline = (userId) => setOnlineUsers(prev => [...new Set([...prev, userId])]);
+    const handleUserOffline = (userId) => setOnlineUsers(prev => prev.filter(id => id !== userId));
+
+    // Full message object { messageId, groupId, sender, content, timestamp }
+    // emitted by the Redis subscriber in ws-server.js
+    const handleReceiveMsg = (msg) => {
+      if (msg.groupId === activeGroup?.group_id) {
+        setChats(prev => [...prev, msg]);
+      }
+      bumpToTop(msg.groupId);
+    };
+
+    const handleDisconnect = () => {
+      setActiveGroup(null);
+      setChats([]);
+    };
+
+    socket.on('set-username', (username) => setUserName(username));
+    socket.on('online-users', handleOnlineUsers);
+    socket.on('user-online', handleUserOnline);
+    socket.on('user-offline', handleUserOffline);
+    socket.on('receive-msg', handleReceiveMsg);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', () => {
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+    });
+
+    return () => {
+      socket.off('set-username');
+      socket.off('online-users', handleOnlineUsers);
+      socket.off('user-online', handleUserOnline);
+      socket.off('user-offline', handleUserOffline);
+      socket.off('receive-msg', handleReceiveMsg);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error');
+    };
+  }, [socket, activeGroup, bumpToTop, setIsLoggedIn]);
+
+  // ── chat history via REST API ─────────────────────────────
+  // Replaces the old socket "chat-history" event that queried the DB from
+  // the WS server. Now:
+  //   1. Calls REST API to fetch message history
+  //   2. Then emits socket "chat-history" to join the Socket.IO room
+  //      (room join is what enables real-time delivery — no data returned)
+
+  const fetchChatHistory = useCallback(async (group) => {
+    if (!socket) return;
+    setChatLoading(true);
+
+    try {
+      // Step 1: fetch history from API
+      const { data } = await chatApi.get('/messages', {
+        params: { groupId: group.group_id, page: 1, limit: 50 },
+      });
+
+      if (data.success) {
+        setChats(data.messages);
+      }
+
+      // Step 2: join the Socket.IO room for real-time delivery
+      socket.emit('join-chat-room', { groupId: group.group_id }, ({ success, error }) => {
+        if (!success) console.error('[WS] Room join failed:', error);
+      });
+
+      // Add to sidebar if not already present (e.g. joined via code)
+      if (!conversations.find(g => g.group_id === group.group_id)) {
+        setConversations(prev => [...prev, { group_name: group.group_name, group_id: group.group_id }]);
+      }
+    } catch (err) {
+      console.error('[API] Failed to load chat history:', err.message);
+    } finally {
+      setChatLoading(false);
+    }
+  }, [socket, conversations]);
+
+  // ── send message ─────────────────────────────────────────
 
   const handleSendMsg = (e) => {
     e.preventDefault();
-    if (socket && messageInput && activeGroup) {
-      socket.emit('send-msg', messageInput, activeGroup.group_id);
-      setMessageInput('');
-      bumpGroupToTop(activeGroup.group_id);
-    }
+    if (!socket || !messageInput || !activeGroup) return;
+
+    socket.emit('send-msg', {
+      groupId: activeGroup.group_id,
+      content: messageInput,
+    });
+
+    setMessageInput('');
+    bumpToTop(activeGroup.group_id);
   };
 
+  // ── render ───────────────────────────────────────────────
+
   if (globalLoading) {
-    return (
-      <Loader
-        divClasses="Loader Home GlobalLoader"
-        content="Connecting..."
-      />
-    );
+    return <Loader divClasses="Loader Home GlobalLoader" content="Connecting..." />;
   }
 
   return (
     <div className='Home'>
 
-      {/* Modals */}
       {joinGroupModalOpen && (
-        <JoinGroupModal setJoinGroupModalOpen={setJoinGroupModalOpen} conversations={conversations} />
+        <JoinGroupModal
+          setJoinGroupModalOpen={setJoinGroupModalOpen}
+          conversations={conversations}
+        />
       )}
       {createGroupModalOpen && (
         <CreateGroupModal
@@ -158,7 +211,10 @@ const Home = ({ setIsLoggedIn }) => {
         />
       )}
       {addParticipantModalOpen && (
-        <AddParticipantModal setAddParticipantModalOpen={setAddParticipantModalOpen} activeGroup={activeGroup} />
+        <AddParticipantModal
+          setAddParticipantModalOpen={setAddParticipantModalOpen}
+          activeGroup={activeGroup}
+        />
       )}
       {viewGroupModalOpen && (
         <ViewGroupModal
@@ -168,15 +224,14 @@ const Home = ({ setIsLoggedIn }) => {
           onlineUsers={onlineUsers}
         />
       )}
-      {profileModalOpen &&
+      {profileModalOpen && (
         <ProfileModal
-            setProfileModalOpen={setProfileModalOpen}
-            userName={userName}
-            onlineUsers={onlineUsers}
+          setProfileModalOpen={setProfileModalOpen}
+          userName={userName}
+          onlineUsers={onlineUsers}
         />
-      }
+      )}
 
-      {/* Sidebar */}
       <SideBar
         setIsLoggedIn={setIsLoggedIn}
         setConversationSectionOpen={setConversationSectionOpen}
@@ -187,7 +242,6 @@ const Home = ({ setIsLoggedIn }) => {
         setIsDarkMode={setIsDarkMode}
       />
 
-      {/* Conversation List Panel */}
       <section className={`Conversation-Section ${conversationSectionOpen ? 'slide-in' : 'slide-out'}`}>
         <SearchBar />
         <ChatList
@@ -201,7 +255,6 @@ const Home = ({ setIsLoggedIn }) => {
         />
       </section>
 
-      {/* Chat Panel — always visible on desktop, conditional on mobile */}
       {(!isSmallScreen || chatSectionOpen) && (
         <section className='Chat-Section'>
           <ChatHeader

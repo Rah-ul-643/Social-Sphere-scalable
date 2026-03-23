@@ -5,6 +5,7 @@ const express = require('express');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 
+const { redis, subscriber } = require('./config/redis');
 const registerHandlers = require('./handlers');
 
 const CLIENT_URL = process.env.CLIENT_URL;
@@ -24,6 +25,40 @@ const io = socketIo(server, {
   },
 });
 
+// -------------------- REDIS SUBSCRIPTIONS --------------------
+
+// Subscribe to both channels once at startup (shared across all WS server instances)
+subscriber.subscribe('messages', 'presence', (err, count) => {
+  if (err) {
+    console.error('[Redis] Failed to subscribe:', err.message);
+    process.exit(1);
+  }
+  console.log(`[Redis] Subscribed to ${count} channel(s): messages, presence`);
+});
+
+subscriber.on('message', (channel, raw) => {
+  let payload;
+  try {
+    payload = JSON.parse(raw);
+  } catch (err) {
+    console.error(`[Redis] Invalid JSON on channel "${channel}":`, raw);
+    return;
+  }
+
+  if (channel === 'messages') {
+    // Deliver only to sockets that have explicitly joined this room
+    io.to(payload.groupId).emit('receive-msg', payload);
+  }
+
+  if (channel === 'presence') {
+    if (payload.type === 'USER_ONLINE') {
+      io.emit('user-online', payload.userId);
+    } else if (payload.type === 'USER_OFFLINE') {
+      io.emit('user-offline', payload.userId);
+    }
+  }
+});
+
 // -------------------- AUTH MIDDLEWARE --------------------
 
 io.use((socket, next) => {
@@ -32,13 +67,10 @@ io.use((socket, next) => {
       socket.handshake.auth?.token ||
       socket.handshake.headers?.authorization?.split(' ')[1];
 
-    if (!token) {
-      return next(new Error('Authentication error: No token'));
-    }
+    if (!token) return next(new Error('Authentication error: No token'));
 
     const decoded = jwt.verify(token, JWT_SECRET);
     socket.userId = decoded.id || decoded.username;
-
     next();
   } catch (err) {
     return next(new Error('Authentication error'));
@@ -47,31 +79,38 @@ io.use((socket, next) => {
 
 // -------------------- CONNECTION --------------------
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   const userId = socket.userId;
+  console.log(`[WS] User connected: ${userId} | Socket: ${socket.id}`);
 
-  console.log(`User connected: ${userId} | Socket: ${socket.id}`);
-
-  // set the user name on client side
   socket.emit('set-username', userId);
 
-  // Add user to set in redis
+  try {
+    await redis.sadd('online_users', userId);
+    await redis.publish('presence', JSON.stringify({ type: 'USER_ONLINE', userId }));
 
-  // TODO: update online users' list by sending event (through redis pubsub) and send online users list to this user as well.
+    // Send full snapshot of online users to this socket only
+    const onlineUsers = await redis.smembers('online_users');
+    socket.emit('online-users', onlineUsers);
+  } catch (err) {
+    console.error(`[Redis] Presence setup failed for ${userId}:`, err.message);
+  }
 
-  // register all event handlers
   registerHandlers(io, socket);
 
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${userId}`);
-
-    // remove user from redis onlineusers set.
-    // send offline event to other users (through redis pubsub)
+  socket.on('disconnect', async () => {
+    console.log(`[WS] User disconnected: ${userId}`);
+    try {
+      await redis.srem('online_users', userId);
+      await redis.publish('presence', JSON.stringify({ type: 'USER_OFFLINE', userId }));
+    } catch (err) {
+      console.error(`[Redis] Presence teardown failed for ${userId}:`, err.message);
+    }
   });
 });
 
 // -------------------- START --------------------
 
 server.listen(PORT, () => {
-  console.log(`WS server running on port ${PORT}`);
+  console.log(`[WS] Server running on port ${PORT}`);
 });
