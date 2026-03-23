@@ -1,0 +1,16 @@
+{
+  "name": "persistence-service",
+  "version": "1.0.0",
+  "description": "Kafka consumer that writes chat messages to MongoDB",
+  "main": "service.js",
+  "scripts": {
+    "start": "node service.js",
+    "dev": "nodemon service.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "kafkajs": "^2.2.4",
+    "mongoose": "^9.3.1",
+    "nodemon": "^3.1.0"
+  }
+}
