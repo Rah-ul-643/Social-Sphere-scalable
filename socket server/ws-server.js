@@ -6,6 +6,7 @@ const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 
 const { redis, subscriber } = require('./config/redis');
+const { connectProducer, disconnectProducer } = require('./kafka/producer');
 const registerHandlers = require('./handlers');
 
 const CLIENT_URL = process.env.CLIENT_URL;
@@ -25,16 +26,25 @@ const io = socketIo(server, {
   },
 });
 
-// -------------------- REDIS SUBSCRIPTIONS --------------------
+// -------------------- STARTUP --------------------
 
-// Subscribe to both channels once at startup (shared across all WS server instances)
-subscriber.subscribe('messages', 'presence', (err, count) => {
-  if (err) {
-    console.error('[Redis] Failed to subscribe:', err.message);
-    process.exit(1);
-  }
-  console.log(`[Redis] Subscribed to ${count} channel(s): messages, presence`);
-});
+async function start() {
+  await connectProducer();
+
+  subscriber.subscribe('messages', 'presence', (err, count) => {
+    if (err) {
+      console.error('[Redis] Failed to subscribe:', err.message);
+      process.exit(1);
+    }
+    console.log(`[Redis] Subscribed to ${count} channel(s): messages, presence`);
+  });
+
+  server.listen(PORT, () => {
+    console.log(`[WS] Server running on port ${PORT}`);
+  });
+}
+
+// -------------------- REDIS SUBSCRIBERS --------------------
 
 subscriber.on('message', (channel, raw) => {
   let payload;
@@ -46,16 +56,12 @@ subscriber.on('message', (channel, raw) => {
   }
 
   if (channel === 'messages') {
-    // Deliver only to sockets that have explicitly joined this room
     io.to(payload.groupId).emit('receive-msg', payload);
   }
 
   if (channel === 'presence') {
-    if (payload.type === 'USER_ONLINE') {
-      io.emit('user-online', payload.userId);
-    } else if (payload.type === 'USER_OFFLINE') {
-      io.emit('user-offline', payload.userId);
-    }
+    if (payload.type === 'USER_ONLINE') io.emit('user-online', payload.userId);
+    if (payload.type === 'USER_OFFLINE') io.emit('user-offline', payload.userId);
   }
 });
 
@@ -89,7 +95,6 @@ io.on('connection', async (socket) => {
     await redis.sadd('online_users', userId);
     await redis.publish('presence', JSON.stringify({ type: 'USER_ONLINE', userId }));
 
-    // Send full snapshot of online users to this socket only
     const onlineUsers = await redis.smembers('online_users');
     socket.emit('online-users', onlineUsers);
   } catch (err) {
@@ -109,8 +114,25 @@ io.on('connection', async (socket) => {
   });
 });
 
-// -------------------- START --------------------
+// -------------------- GRACEFUL SHUTDOWN --------------------
 
-server.listen(PORT, () => {
-  console.log(`[WS] Server running on port ${PORT}`);
+async function shutdown() {
+  console.log('[WS] Shutting down...');
+  await disconnectProducer();
+  redis.disconnect();
+  subscriber.disconnect();
+  server.close(() => {
+    console.log('[WS] Shutdown complete');
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+// -------------------- BOOT --------------------
+
+start().catch((err) => {
+  console.error('[WS] Fatal startup error:', err.message);
+  process.exit(1);
 });
