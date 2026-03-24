@@ -61,7 +61,6 @@ const Home = ({ setIsLoggedIn }) => {
     const token = JSON.parse(localStorage.getItem('token'));
 
     const newSocket = io(SOCKET_SERVER_URL, {
-      // Send token in auth (matches ws-server.js: socket.handshake.auth.token)
       auth: { token },
     });
 
@@ -69,9 +68,7 @@ const Home = ({ setIsLoggedIn }) => {
     return () => newSocket.disconnect();
   }, []);
 
-  // ── fetch conversations via REST API on mount ─────────────
-  // Replaces the old socket "retrieve-conversations" event that tried to
-  // query the DB directly from the WS server.
+
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -136,12 +133,7 @@ const Home = ({ setIsLoggedIn }) => {
     };
   }, [socket, activeGroup, bumpToTop, setIsLoggedIn]);
 
-  // ── chat history via REST API ─────────────────────────────
-  // Replaces the old socket "chat-history" event that queried the DB from
-  // the WS server. Now:
-  //   1. Calls REST API to fetch message history
-  //   2. Then emits socket "chat-history" to join the Socket.IO room
-  //      (room join is what enables real-time delivery — no data returned)
+
 
   const fetchChatHistory = useCallback(async (group) => {
     if (!socket) return;

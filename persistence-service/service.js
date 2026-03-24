@@ -10,7 +10,7 @@ const FLUSH_INTERVAL_MS = parseInt(process.env.FLUSH_INTERVAL_MS || '2000', 10);
 
 let buffer    = [];
 let flushTimer = null;
-let saveBatch;   // populated after DB connects (see start())
+let saveBatch;  
 
 async function flush() {
   if (!buffer.length) return;
@@ -42,7 +42,7 @@ async function start() {
   // Step 1: connect to MongoDB first
   await connectDB();
 
-  // Step 2: NOW it's safe to require the repository (model registers on active connection)
+  // Step 2: require the repository
   ({ saveBatch } = require('./db/messageRepository'));
 
   // Step 3: connect Kafka and start consuming
