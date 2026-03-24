@@ -1,50 +1,43 @@
 require('dotenv').config();
 
-const http = require('http');
-const express = require('express');
+const http     = require('http');
+const express  = require('express');
 const socketIo = require('socket.io');
-const jwt = require('jsonwebtoken');
+const jwt      = require('jsonwebtoken');
 
-const { redis, subscriber } = require('./config/redis');
+const { redis, subscriber }                  = require('./config/redis');
 const { connectProducer, disconnectProducer } = require('./kafka/producer');
-const registerHandlers = require('./handlers');
+const registerHandlers                        = require('./handlers');
 
 const CLIENT_URL = process.env.CLIENT_URL;
 const JWT_SECRET = process.env.JWT_SECRET_KEY;
-const PORT = process.env.WS_PORT || 5000;
+const PORT       = process.env.WS_PORT || 5000;
 
 // -------------------- INIT --------------------
 
-const app = express();
+const app    = express();
 const server = http.createServer(app);
 
 const io = socketIo(server, {
   cors: {
-    origin: CLIENT_URL,
-    methods: ['GET', 'POST'],
+    origin:      CLIENT_URL,
+    methods:     ['GET', 'POST'],
     credentials: true,
   },
 });
 
-// -------------------- STARTUP --------------------
+// -------------------- REDIS SUBSCRIBER --------------------
 
-async function start() {
-  await connectProducer();
-
+subscriber.on('ready', () => {
   subscriber.subscribe('messages', 'presence', (err, count) => {
     if (err) {
-      console.error('[Redis] Failed to subscribe:', err.message);
-      process.exit(1);
+      console.error('[Redis:subscriber] Failed to re-subscribe:', err.message);
+      return;
     }
-    console.log(`[Redis] Subscribed to ${count} channel(s): messages, presence`);
+    console.log(`[Redis:subscriber] Subscribed to ${count} channel(s): messages, presence`);
   });
+});
 
-  server.listen(PORT, () => {
-    console.log(`[WS] Server running on port ${PORT}`);
-  });
-}
-
-// -------------------- REDIS SUBSCRIBERS --------------------
 
 subscriber.on('message', (channel, raw) => {
   let payload;
@@ -56,11 +49,17 @@ subscriber.on('message', (channel, raw) => {
   }
 
   if (channel === 'messages') {
-    io.to(payload.groupId).emit('receive-msg', payload);
+    console.log(payload.content);
+    
+    io.to(payload.groupId).emit('receive-msg', {
+      groupId: payload.groupId,
+      sender:  payload.sender,
+      message: payload.content,
+    });
   }
 
   if (channel === 'presence') {
-    if (payload.type === 'USER_ONLINE') io.emit('user-online', payload.userId);
+    if (payload.type === 'USER_ONLINE')  io.emit('user-online',  payload.userId);
     if (payload.type === 'USER_OFFLINE') io.emit('user-offline', payload.userId);
   }
 });
@@ -94,7 +93,6 @@ io.on('connection', async (socket) => {
   try {
     await redis.sadd('online_users', userId);
     await redis.publish('presence', JSON.stringify({ type: 'USER_ONLINE', userId }));
-
     const onlineUsers = await redis.smembers('online_users');
     socket.emit('online-users', onlineUsers);
   } catch (err) {
@@ -114,6 +112,18 @@ io.on('connection', async (socket) => {
   });
 });
 
+// -------------------- STARTUP --------------------
+
+async function start() {
+  await connectProducer();
+
+  await new Promise((resolve) => subscriber.once('ready', resolve));
+
+  server.listen(PORT, () => {
+    console.log(`[WS] Server running on port ${PORT}`);
+  });
+}
+
 // -------------------- GRACEFUL SHUTDOWN --------------------
 
 async function shutdown() {
@@ -127,10 +137,8 @@ async function shutdown() {
   });
 }
 
-process.on('SIGINT', shutdown);
+process.on('SIGINT',  shutdown);
 process.on('SIGTERM', shutdown);
-
-// -------------------- BOOT --------------------
 
 start().catch((err) => {
   console.error('[WS] Fatal startup error:', err.message);
