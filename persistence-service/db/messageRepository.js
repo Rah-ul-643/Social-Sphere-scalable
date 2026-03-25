@@ -43,7 +43,6 @@ async function linkMessagesToGroups(insertedDocs) {
     idsPerGroup[doc.groupId].push(doc._id);
   }
 
-  // One updateOne per affected group, all in a single round-trip
   const bulkOps = Object.entries(idsPerGroup).map(([groupId, ids]) => ({
     updateOne: {
       filter: { group_id: groupId },

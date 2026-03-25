@@ -97,7 +97,7 @@ const Home = ({ setIsLoggedIn }) => {
     const handleUserOnline = (userId) => setOnlineUsers(prev => [...new Set([...prev, userId])]);
     const handleUserOffline = (userId) => setOnlineUsers(prev => prev.filter(id => id !== userId));
 
-    // Full message object { messageId, groupId, sender, content, timestamp }
+    // message object { messageId, groupId, sender, message, timestamp }
     // emitted by the Redis subscriber in ws-server.js
     const handleReceiveMsg = (msg) => {
       if (msg.groupId === activeGroup?.group_id) {
@@ -140,7 +140,7 @@ const Home = ({ setIsLoggedIn }) => {
     setChatLoading(true);
 
     try {
-      // Step 1: fetch history from API
+      // 1: fetch history from API
       const { data } = await chatApi.get('/messages', {
         params: { groupId: group.group_id, page: 1, limit: 50 },
       });
@@ -149,12 +149,11 @@ const Home = ({ setIsLoggedIn }) => {
         setChats(data.messages);
       }
 
-      // Step 2: join the Socket.IO room for real-time delivery
+      // 2: join the Socket.IO room for real-time delivery
       socket.emit('join-chat-room', { groupId: group.group_id }, ({ success, error }) => {
         if (!success) console.error('[WS] Room join failed:', error);
       });
 
-      // Add to sidebar if not already present (e.g. joined via code)
       if (!conversations.find(g => g.group_id === group.group_id)) {
         setConversations(prev => [...prev, { group_name: group.group_name, group_id: group.group_id }]);
       }

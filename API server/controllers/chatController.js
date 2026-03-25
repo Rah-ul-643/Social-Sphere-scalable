@@ -2,8 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const groups = require('../models/groups');
 const users = require('../models/users');
-
-// -------------------- EXISTING HANDLERS --------------------
+const _ = require('../models/messages');
 
 const searchQueryHandler = async (req, res) => {
     const { searchQuery } = req.query;
@@ -154,18 +153,7 @@ const removeParticipant = async (req, res) => {
     }
 };
 
-// -------------------- NEW HANDLERS --------------------
 
-/**
- * GET /api/chat/conversations
- *
- * Returns all groups the authenticated user is a participant of.
- * Used by the client on initial load (replaces the old socket
- * "retrieve-conversations" event that tried to query the DB from
- * the WS server).
- *
- * Response: { conversations: [{ group_id, group_name, admin, updatedAt }] }
- */
 const getConversationsHandler = async (req, res) => {
     try {
         const username = req.username;
@@ -182,22 +170,6 @@ const getConversationsHandler = async (req, res) => {
     }
 };
 
-/**
- * GET /api/chat/messages?groupId=<id>&page=<n>&limit=<n>
- *
- * Returns paginated message history for a group, oldest-first within the page.
- * Used by the client whenever a user opens a chat (replaces the old socket
- * "chat-history" event that queried the DB directly from the WS server).
- *
- * Access control: only participants of the group can fetch messages.
- *
- * Query params:
- *   groupId  (required)
- *   page     (optional, default 1)
- *   limit    (optional, default 50)
- *
- * Response: { messages: [...], total, page, limit }
- */
 const getMessagesHandler = async (req, res) => {
     try {
         const { groupId } = req.query;
@@ -237,7 +209,6 @@ const getMessagesHandler = async (req, res) => {
 };
 
 module.exports = {
-    // existing
     searchQueryHandler,
     joinGroupHandler,
     createGroupHandler,
@@ -246,7 +217,6 @@ module.exports = {
     groupDataHandler,
     joinRequestResponseHandler,
     leaveGroupHandler,
-    // new
     getConversationsHandler,
     getMessagesHandler,
 };

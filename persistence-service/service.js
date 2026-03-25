@@ -39,13 +39,13 @@ function scheduleFlush() {
 // -------------------- KAFKA CONSUMER --------------------
 
 async function start() {
-  // Step 1: connect to MongoDB first
+  // 1: connect to MongoDB first
   await connectDB();
 
-  // Step 2: require the repository
+  // 2: require the repository
   ({ saveBatch } = require('./db/messageRepository'));
 
-  // Step 3: connect Kafka and start consuming
+  // 3: connect Kafka and start consuming
   await consumer.connect();
   console.log('[Kafka:Consumer] Connected');
 
