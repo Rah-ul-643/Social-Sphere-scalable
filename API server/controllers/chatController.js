@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const groups = require('../models/groups');
 const users = require('../models/users');
-const _ = require('../models/messages');
+const groups = require('../models/messages');
 
 const searchQueryHandler = async (req, res) => {
     const { searchQuery } = req.query;
